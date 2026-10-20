@@ -1,10 +1,7 @@
-# Builds the release APK entirely in the cloud.
-# You only need a phone: edit files on github.com, tap "Run workflow",
-# then download the APK artifact and install it.
 name: Build APK
 
 on:
-  workflow_dispatch:   # manual "Run workflow" button
+  workflow_dispatch:
   push:
     branches: [main]
 
@@ -18,39 +15,38 @@ jobs:
         with:
           channel: stable
 
-      # Generate the android/ folder in the cloud (no PC needed).
-      # git restore afterwards guarantees YOUR lib/ and pubspec.yaml win.
       - name: Generate Android project shell
         run: |
           flutter create . --org com.wardrobestylist --project-name wardrobe_stylist --platforms android
           git checkout -- pubspec.yaml lib || true
 
-      # flutter_local_notifications REQUIRES core library desugaring;
-      # flutter create does not enable it, so we patch the generated file.
       - name: Enable desugaring (required for notifications)
         run: |
           python3 - <<'EOF'
-          p = "android/app/build.gradle"
+          import os
+          candidates = [p for p in ("android/app/build.gradle", "android/app/build.gradle.kts") if os.path.exists(p)]
+          assert candidates, "no app-level gradle file found"
+          p = candidates[0]
+          kts = p.endswith(".kts")
           s = open(p).read()
-          if "coreLibraryDesugaringEnabled" not in s:
-              s = s.replace("compileOptions {", "compileOptions {\n        coreLibraryDesugaringEnabled true", 1)
-          if "coreLibraryDesugaring " not in s:
-              line = "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'"
+          if "desugar_jdk_libs" not in s:
+              flag = "isCoreLibraryDesugaringEnabled = true" if kts else "coreLibraryDesugaringEnabled true"
+              assert "compileOptions {" in s, "compileOptions block not found"
+              s = s.replace("compileOptions {", "compileOptions {\n        " + flag, 1)
+              dep = ('    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")' if kts
+                     else "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'")
               if "dependencies {" in s:
-                  s = s.replace("dependencies {", "dependencies {\n" + line, 1)
+                  s = s.replace("dependencies {", "dependencies {\n" + dep, 1)
               else:
-                  s += "\ndependencies {\n" + line + "\n}\n"
+                  s += "\ndependencies {\n" + dep + "\n}\n"
           open(p, "w").write(s)
-          print("desugaring patch applied")
+          print("desugaring patch applied to", p)
           EOF
 
-      # Daily outfit notifications need this on Android 13+
       - name: Allow notifications (Android 13+)
         run: |
           sed -i 's|<application|    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <application|' android/app/src/main/AndroidManifest.xml
 
-      # Model fetched at build time -> repo stays small, app stays offline.
-      # Labels are GENERATED from TF.js ImageNet class list (stable source).
       - name: Fetch offline AI model + labels
         run: |
           mkdir -p assets
