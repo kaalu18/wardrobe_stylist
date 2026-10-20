@@ -11,7 +11,7 @@ class StylistEngine {
 
   static double _hueDist(int a, int b) {
     final d = (a - b).abs() % 360;
-    return d > 180 ? 360 - d : d;
+    return (d > 180 ? 360 - d : d).toDouble();
   }
 
   static double _pairScore(int h1, int h2) {
@@ -59,7 +59,7 @@ class StylistEngine {
             final f = (e['formality'] as num?)?.toDouble() ?? 0.5;
             score += (1 - (f - target).abs()) * 2;
           }
-          // Weather: suggest a layer when it's cold.
+          // Weather: suggest a layer when it is cold.
           if (tempC < 16 && outers.isNotEmpty) {
             combo.add(outers[rng.nextInt(outers.length)]);
             score += 1.0;
@@ -81,7 +81,7 @@ class StylistEngine {
 
   static String reason(Map<String, dynamic> outfit, String occasion) {
     final n = (outfit['items'] as List).length;
-    return '$n pieces, color-harmonized for $occasion'
-        '${n > 3 ? ", plus a layer for the weather" : ""}, favoring pieces you haven't worn much lately.';
+    return "$n pieces, color-harmonized for $occasion"
+        "${n > 3 ? ", plus a layer for the weather" : ""}, favoring pieces you haven't worn much lately.";
   }
 }
