@@ -25,10 +25,10 @@ jobs:
           flutter create . --org com.wardrobestylist --project-name wardrobe_stylist --platforms android
           git checkout -- pubspec.yaml lib || true
 
-      - name: Patch gradle config (desugaring + Kotlin target)
+      - name: Patch gradle config (desugaring + JVM targets)
         run: |
           python3 - <<'EOF'
-          import os
+          import os, re
           candidates = [p for p in ("android/app/build.gradle", "android/app/build.gradle.kts") if os.path.exists(p)]
           assert candidates, "no app-level gradle file found"
           p = candidates[0]
@@ -44,6 +44,7 @@ jobs:
                   s = s.replace("dependencies {", "dependencies {\n" + dep, 1)
               else:
                   s += "\ndependencies {\n" + dep + "\n}\n"
+          s = re.sub(r"JavaVersion\.VERSION_[0-9_]+", "JavaVersion.VERSION_17", s)
           if "jvmTarget" not in s:
               align = (
                   "\ntasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {\n"
