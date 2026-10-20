@@ -28,7 +28,7 @@ jobs:
           test -f assets/mobilenet_v1_1.0_224_quant.tflite || tar -xzf model.tgz -C assets
           test -f assets/mobilenet_v1_1.0_224_quant.tflite || (echo "MODEL MISSING" && exit 1)
           curl -fSL -o classes.ts https://raw.githubusercontent.com/tensorflow/tfjs-models/master/mobilenet/src/imagenet_classes.ts
-          { echo "background"; grep -o "'[^']*'" classes.ts | tr -d "'"; } > assets/labels.txt
+          { echo "background"; grep -E "^[[:space:]]*[0-9]+: '" classes.ts | sed -E "s/^[[:space:]]*[0-9]+: '//; s/',?[[:space:]]*$//"; } > assets/labels.txt
           test "$(wc -l < assets/labels.txt)" -eq 1001 || (echo "BAD LABEL COUNT: $(wc -l < assets/labels.txt)" && exit 1)
 
       - run: flutter pub get
