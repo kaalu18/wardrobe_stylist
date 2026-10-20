@@ -27,9 +27,9 @@ jobs:
             || curl -fSL -o assets/mobilenet_v1_1.0_224_quant.tflite https://raw.githubusercontent.com/tflite-soc/tensorflow-models/master/mobilenet-v1/mobilenet_v1_1.0_224_quant.tflite
           test -f assets/mobilenet_v1_1.0_224_quant.tflite || tar -xzf model.tgz -C assets
           test -f assets/mobilenet_v1_1.0_224_quant.tflite || (echo "MODEL MISSING" && exit 1)
-          curl -fSL -o assets/labels.txt https://raw.githubusercontent.com/tensorflow/examples/master/lite/examples/image_classification/android/app/src/main/assets/labels_mobilenet_quant_v1_224.txt \
-            || curl -fSL -o assets/labels.txt https://raw.githubusercontent.com/Mesa3D/mesa/main/src/gallium/frontends/teflon/tests/labels_mobilenet_quant_v1_224.txt \
-            || (echo "LABELS MISSING" && exit 1)
+          curl -fSL -o classes.ts https://raw.githubusercontent.com/tensorflow/tfjs-models/master/mobilenet/src/imagenet_classes.ts
+          { echo "background"; grep -o "'[^']*'" classes.ts | tr -d "'"; } > assets/labels.txt
+          test "$(wc -l < assets/labels.txt)" -eq 1001 || (echo "BAD LABEL COUNT: $(wc -l < assets/labels.txt)" && exit 1)
 
       - run: flutter pub get
       - run: flutter build apk --release
