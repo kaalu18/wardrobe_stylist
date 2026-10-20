@@ -56,9 +56,13 @@ jobs:
                   "}\n"
               )
               s += align
+          if "FORCE_JVM_17" not in s:
+              s += "\n// FORCE_JVM_17\nandroid {\n    compileOptions {\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17\n    }\n}\n"
           open(p, "w").write(s)
           print("gradle patched:", p)
           EOF
+          echo "---- compileOptions Gradle will use ----"
+          grep -n -A 4 "compileOptions" android/app/build.gradle* || true
 
       - name: Allow notifications (Android 13+)
         run: |
