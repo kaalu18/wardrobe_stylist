@@ -25,8 +25,9 @@ class VisionService {
     final bytes = await rootBundle.load('assets/mobilenet_v1_1.0_224_quant.tflite');
     _it = Interpreter.fromBuffer(bytes.buffer.asUint8List());
     _labels = (await rootBundle.loadString('assets/labels.txt'))
-        .split('
-').where((e) => e.trim().isNotEmpty).toList();
+        .split('\n')
+        .where((e) => e.trim().isNotEmpty)
+        .toList();
   }
 
   Future<Map<String, dynamic>> analyze(String path) async {
@@ -34,7 +35,6 @@ class VisionService {
     final raw = img.decodeImage(await File(path).readAsBytes())!;
     final im = img.copyResize(raw, width: 224, height: 224);
 
-    // uint8 quantized MobileNet input [1,224,224,3]
     final input = [
       List.generate(224, (y) => List.generate(224, (x) {
         final p = im.getPixel(x, y);
@@ -60,7 +60,6 @@ class VisionService {
       formality = 0.2;
     }
 
-    // Dominant hues for color-harmony scoring.
     final hues = <int>[];
     try {
       final pal = await PaletteGenerator.fromImageProvider(
@@ -76,7 +75,7 @@ class VisionService {
       'category': category,
       'formality': formality,
       'hues': hues,
-      'tags': [label.replaceAll(RegExp(r'^\d+\s+'), '').trim()],
+      'tags': [label],
       'label': label,
     };
   }
